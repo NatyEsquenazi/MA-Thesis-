@@ -1,0 +1,886 @@
+---
+title: "Thesis project"
+author: "Natalia Esquenazi"
+date: "2024-04-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import libraries 
+```{r import, echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(summarytools)
+library(readxl)
+library(ggeffects)
+library(estimatr)
+```
+
+## Import dataset 
+```{r dataset, echo=TRUE, message=FALSE, warning=FALSE}
+# Setting working directory
+setwd("~/Thesis")
+
+# Import survey
+df <- read_excel("~/Thesis/caf-capacidades-financieras-argentina-2017.xlsx")
+```
+
+## Indicator: financial knowledge
+```{r knowledge, echo=TRUE, message=FALSE, warning=FALSE}
+# Question 1
+df <- df %>%
+  mutate(knowledge1 = ifelse(K2 == 200000, 1, 0))
+
+# Question 2
+df <- df %>%
+  mutate(knowledge2 = ifelse(K3 == "Menos de lo que podrían comprar hoy", 
+                             1, 0))
+# Question 3
+df <- df %>%
+  mutate(knowledge3 = ifelse(K4 == 0, 
+                             1, 0))
+# Question 4
+df <- df %>%
+  mutate(knowledge4 = ifelse(K5 == 102000, 
+                             1, 0))
+# Question 5
+df <- df %>%
+  mutate(knowledge5 = ifelse(K6 == "Más de $110.000", 
+                             1, 0))
+# Question 6
+df <- df %>%
+  mutate(knowledge6 = ifelse(K7_1_K7 == "VERDADERO", 
+                             1, 0))
+# Question 7
+df <- df %>%
+  mutate(knowledge7 = ifelse(K7_2_K7 == "VERDADERO", 
+                             1, 0))
+# Question 8
+df <- df %>%
+  mutate(knowledge8 = ifelse(K7_3_K7 == "VERDADERO", 
+                             1, 0))
+
+# Creating the index as a sum of variables - scale between 0 and 10
+df <- df %>%
+  mutate(financial_knowledge = knowledge1 + knowledge2 + knowledge3 + 
+         knowledge4 + knowledge5 + knowledge6 + knowledge7 + knowledge8)
+
+df <- subset(df, select = -c(knowledge1, knowledge2, knowledge3, knowledge4, knowledge5, 
+                             knowledge6, knowledge7, knowledge8, K2, K3, K4, K5, 
+                             K6, K7_1_K7,K7_2_K7,K7_3_K7))
+```
+
+## Indicator: financial behaviour
+```{r behaviour, echo=TRUE, message=FALSE, warning=FALSE}
+# Question 1: F2.a Does your family regularly make advance calculations of future income and expenses to organize household purchases and savings? (SPONTANEOUS – SINGLE RESPONSE) 
+df <- df %>%
+  mutate(behavior1 = ifelse(F2a == "Sí", 
+                             1, 0))
+
+# Question 2: F2.b (ONLY IF YOU ANSWER COD 1 IN F2a) Does your family use this budget to make an exact plan for the use of money or to make a very general plan for the use of money? (SINGLE ANSWER) 
+df <- df %>%
+  mutate(behavior2 = ifelse(F2b == "Hacer un plan exacto", 
+                             1, 0))
+df <- df %>%
+  mutate(behavior2 = ifelse(is.na(behavior2), 0, behavior2))
+
+# Question 3: F2.c (ONLY IF YOU ANSWER COD 1 IN F2a) How often do you meet the budget? (READ OPTIONS – SINGLE ANSWER) 
+df <- df %>%
+  mutate(behavior3 = ifelse(F2c == "Siempre", 
+                             1, 0))
+df <- df %>%
+  mutate(behavior3 = ifelse(is.na(behavior3), 0, behavior3))
+
+# Question 4: F3a In the last 12 months, have you been saving money or not (whether you still have the money or not)?"
+
+df <- df %>%
+  mutate(behavior4 = ifelse(F3a == "Sí", 
+                             1, 0))
+
+# Question 5: C1.b And now, can you tell me if you currently have any of these financial products (INDIVIDUALLY - the product is in your name - or JOINTLY WITH OTHERS - the product is in your name and other people's names)?
+#df <- df %>%
+#  mutate(behavior5 = case_when(C1b01 == "No" ~ 0,
+#                               C1b01 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior6 = case_when(C1b02 == "No" ~ 0,
+#                               C1b02 == "Sí" ~ 1))
+df <- df %>%
+  mutate(behavior7 = case_when(C1b03 == "No" ~ 0, #plazo fijo
+                               C1b03 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior8 = case_when(C1b04 == "No" ~ 0,
+#                               C1b04 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior9 = case_when(C1b05 == "No" ~ 0, 
+#                               C1b05 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior10 = case_when(C1b06 == "No" ~ 0,
+#                               C1b06 == "Sí" ~ 1))
+df <- df %>%
+  mutate(behavior11 = case_when(C1b07 == "No" ~ 0, #acciones
+                               C1b07 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior12 = case_when(C1b08 == "No" ~ 0,
+#                               C1b08 == "Sí" ~ 1))
+df <- df %>%
+  mutate(behavior13 = case_when(C1b09 == "No" ~ 0, #fondo de invesrion
+                               C1b09 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior14 = case_when(C1b10 == "No" ~ 0,
+#                               C1b10 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior15 = case_when(C1b11 == "No" ~ 0,
+#                               C1b11 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior16 = case_when(C1b12 == "No" ~ 0,
+#                               C1b12 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior17 = case_when(C1b13 == "No" ~ 0,
+#                               C1b13 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior18 = case_when(C1b16 == "No" ~ 0,
+#                               C1b16 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior19 = case_when(C1b17 == "No" ~ 0,
+#                               C1b17 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior20 = case_when(C1b18 == "No" ~ 0,
+#                               C1b18 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior21 = case_when(C1b19 == "No" ~ 0,
+#                               C1b19 == "Sí" ~ 1))
+#df <- df %>%
+#  mutate(behavior22 = case_when(C1b20 == "No" ~ 0,
+#                               C1b20 == "Sí" ~ 1))
+#df <- df %>%
+# mutate(behavior23 = case_when(C1b_996 == "No" ~ 0,
+#                                C1b_996 == "Sí" ~ 1))
+
+# Creating the index as a sum of variables - scale between 0 and 10
+df <- df %>%
+  mutate(financial_behavior = behavior1 + behavior2 + behavior3 + behavior4 + behavior7 + behavior11 + behavior13)
+
+df <- subset(df, select = -c(behavior1 , behavior2 , behavior3 , behavior4, behavior7, behavior11, behavior13, F2a, F2b, F2c, F3a, C1b01, C1b02, C1b03, C1b04, C1b05, C1b06, 
+           C1b07, C1b08, C1b09, C1b10, C1b11, C1b12, C1b13, C1b16, C1b17, C1b18,
+           C1b19, C1b20, C1b_996))
+```
+
+
+## Indicator: financial attitude
+```{r attitude, echo=TRUE, message=FALSE, warning=FALSE}
+# Question 1: F10_1_F10 Before buying something I carefully consider whether I can afford it. 
+df <- df %>%
+  filter(F10_1_F10 != "NR")%>%
+  mutate(attitude1 = case_when(F10_1_F10 == "1 Completamente en desacuerdo" ~ 1,
+                            F10_1_F10 == "2" ~ 2,
+                            F10_1_F10 == "3" ~ 3,
+                            F10_1_F10 == "4" ~ 4,
+                            F10_1_F10 == "5 Completamente de acuerdo" ~ 5))
+
+# Question 2: F10_2_F10 I prefer to live the day and don't worry about tomorrow: opposite direction
+df <- df %>%
+  filter(F10_2_F10 != "NR")%>%
+  mutate(attitude2 = case_when(F10_2_F10 == "1 Completamente en desacuerdo" ~ 5,
+                               F10_2_F10 == "2" ~ 4,
+                               F10_2_F10 == "3" ~ 3,
+                               F10_2_F10 == "4" ~ 2,
+                               F10_2_F10 == "5 Completamente de acuerdo" ~ 1))
+
+# Question 3: F10_3_F10 I'd rather spend money than save for the future: opposite direction
+df <- df %>%
+  filter(F10_3_F10 != "NR")%>%
+  mutate(attitude3 = case_when(F10_3_F10 == "1 Completamente en desacuerdo" ~ 5,
+                               F10_3_F10 == "2" ~ 4,
+                               F10_3_F10 == "3" ~ 3,
+                               F10_3_F10 == "4" ~ 2,
+                               F10_3_F10 == "5 Completamente de acuerdo" ~ 1))
+
+#Question 4: F10_4_F10 I pay my bills on time. 
+df <- df %>%
+  filter(F10_4_F10 != "NR")%>%
+  mutate(attitude4 = case_when(F10_4_F10 == "1 Completamente en desacuerdo" ~ 1,
+                               F10_4_F10 == "2" ~ 2,
+                               F10_4_F10 == "3" ~ 3,
+                               F10_4_F10 == "4" ~ 4,
+                               F10_4_F10 == "5 Completamente de acuerdo" ~ 5))
+
+# Question 5: F10_5_F10 I am willing to risk some of my own money when I make an investment.
+df <- df %>%
+  filter(F10_5_F10 != "NR")%>%
+  mutate(attitude5 = case_when(F10_5_F10 == "1 Completamente en desacuerdo" ~ 1,
+                               F10_5_F10 == "2" ~ 2,
+                               F10_5_F10 == "3" ~ 3,
+                               F10_5_F10 == "4" ~ 4,
+                               F10_5_F10 == "5 Completamente de acuerdo" ~ 5))
+
+# Question 6: F10_6_F10 I personally monitor my financial issues.
+df <- df %>%
+  filter(F10_6_F10 != "NR")%>%
+  mutate(attitude6 = case_when(F10_6_F10 == "1 Completamente en desacuerdo" ~ 1,
+                               F10_6_F10 == "2" ~ 2,
+                               F10_6_F10 == "3" ~ 3,
+                               F10_6_F10 == "4" ~ 4,
+                               F10_6_F10 == "5 Completamente de acuerdo" ~ 5))
+
+# Question 7: F10_7_F10 I set long-term savings goals and strive to achieve them.
+df <- df %>%
+  filter(F10_7_F10 != "NR")%>%
+  mutate(attitude7 = case_when(F10_7_F10 == "1 Completamente en desacuerdo" ~ 1,
+                               F10_7_F10 == "2" ~ 2,
+                               F10_7_F10 == "3" ~ 3,
+                               F10_7_F10 == "4" ~ 4,
+                               F10_7_F10 == "5 Completamente de acuerdo" ~ 5))
+
+# Question 8: F10_8_F10 The money is there to be spent.
+df <- df %>%
+  filter(F10_8_F10 != "NR")%>%
+  mutate(attitude8 = case_when(F10_8_F10 == "1 Completamente en desacuerdo" ~ 5,
+                               F10_8_F10 == "2" ~ 4,
+                               F10_8_F10 == "3" ~ 3,
+                               F10_8_F10 == "4" ~ 2,
+                               F10_8_F10 == "5 Completamente de acuerdo" ~ 1))
+
+df <- subset(df, select = -c(F10_1_F10, F10_2_F10, F10_3_F10, F10_4_F10,
+                             F10_5_F10, F10_6_F10, F10_7_F10, F10_8_F10))
+```
+
+## Factor analysis
+```{r factor analysis, echo=TRUE, message=FALSE, warning=FALSE}
+library(psych) 
+library(psychTools)
+
+corr.test(as.matrix(df[, 194:201]))
+
+library(corrplot)
+cor <- cor(df[, 194:201])
+corrplot(cor, type = "upper", 
+         tl.srt = 45)
+```
+The correlation matrix shows a higher correlation between attitude2 and attitude8 (0.38), attitude2 and attitude3 (0.40), attitude3 and attitude8 (0.37), attitude3 and attitude2 (0.40), attitude8 and attitude2 (0.38), attitude8 and attitude3 (0.37). This can be named as spending attitude. 
+
+Given that there are some similar variables, next, Im going to estimate the number of factors by eigenvalue test.
+
+```{r factor analysis2, echo=TRUE, message=FALSE, warning=FALSE}
+set.seed(123)
+library(nFactors)
+eigen(cor(df[, 194:201])) # 2 factors is ok
+```
+
+After knowing the number of factors to use, we apply it (factors = 2) to the factor analysis.
+Varimax (default): an orthogonal method of rotation that minimizes the number of variables with high loadings. It results in uncorrelated factors.
+
+```{r factor analysis3, echo=TRUE, message=FALSE, warning=FALSE}
+library(GPArotation)
+factor1 <- factanal(df[, 194:201], factors=2, rotation="varimax") 
+
+library(pixiedust)
+library(kableExtra)
+
+dust(factor1) %>%
+  sprinkle(col = 3:4, round = 3) %>%
+  sprinkle_colnames(variable = "Questions",
+                    fl1 = "Factor 1",
+                    fl2 = "Factor 2") %>%
+  kable() %>%
+  kable_styling()
+
+fa.diagram(factor1$loadings)  
+
+```
+
+Below, I adopt rotation=“varimax” and scores = “Bartlett” for the following analysis explanation.
+
+```{r factor analysis4, echo=TRUE, message=FALSE, warning=FALSE}
+factor_res = factanal(df[, 194:201], factors=1, scores="Bartlett")
+factor_res
+
+dust(factor_res) %>%
+  sprinkle(col = 2:3, round = 3) %>%
+  sprinkle_colnames(variable = "Questions",
+                    fl1 = "Factor 1") %>%
+  kable() %>%
+  kable_styling()
+```
+Factor loadings show the weights that determine how each factor affects each attribute. These loadings (take its absolute values) help to assign attributes to factors and determine the name that best describes the factor.
+
+By explaining the loading matrix, we know attributes “attityde2”, "attitude3" and “attitude8” contribute a lot to factor 1. Thus, we can conclude these variables are the root factors. 
+
+Additionally, the cumulative loading shows us that 24% of the data can be explained by factor 1 and 2. In other words, in this case, when reducing 8 factors to 3 factors, there is 76% information loss.
+
+## Factor Scores
+Next, let’s get the factor scores and add matching brand names for each individual on each factor.
+```{r factor analysis5, echo=TRUE, message=FALSE, warning=FALSE}
+id.scores <- data.frame(factor_res$scores) 
+id.scores$id_ecf <- df$id_ecf
+head(id.scores)
+
+df <- left_join(id.scores, df, by = "id_ecf")
+```
+
+## Standarization
+```{r standarize, echo=TRUE, message=FALSE, warning=FALSE}
+# Calculate mean and standard deviation for each variable
+mean_var1 <- mean(df$financial_knowledge)
+sd_var1 <- sd(df$financial_knowledge)
+
+mean_var2 <- mean(df$financial_behavior)
+sd_var2 <- sd(df$financial_behavior)
+
+df$financial_attitude <- df$Factor1
+mean_var3 <- mean(df$financial_attitude)
+sd_var3 <- sd(df$financial_attitude)
+
+# Standardize the variables manually
+df <- df %>%
+  mutate(
+    var1_scaled = (financial_knowledge - mean_var1) / sd_var1,
+    var2_scaled = (financial_behavior - mean_var2) / sd_var2,
+    var3_scaled = (financial_attitude - mean_var3) / sd_var3
+  )
+
+df <- subset(df, select = -c(attitude1, attitude2, attitude3, attitude4, attitude5,
+                             attitude6, attitude7, attitude8))
+
+write.csv(df, file = "df.csv")
+df <- read_csv("~/Thesis/df.csv")
+```
+
+## Data transformation
+```{r transformation, echo=TRUE, message=FALSE, warning=FALSE}
+df <- subset(df, select = c(id_ecf, D1, D2, D7, D7a, D5_1, D5_2, D5_3, D5_4, D5_5, D5_6, D5_7, D5_8, 
+                            F1, F5, C1e1_1_C1e1, C1e1_2_C1e1, C1e1_3_C1e1, C1e1_4_C1e1, F11, F13, 
+                            D9, D10, D6, D8, LOCALIDAD, AMBITO, REGION, financial_attitude,
+                            financial_knowledge,
+                            financial_behavior, var1_scaled, var2_scaled, var3_scaled))
+# Rename variables
+df <- df %>%
+  rename(gender = D1,
+         province = D2,
+         age = D7,
+         age_range = D7a,
+         live_alone = D5_1,
+         married = D5_2,
+         children = D5_3,
+         older_son = D5_4,
+         parents = D5_5,
+         family_other = D5_6,
+         friends = D5_7,
+         other = D5_8,
+         financial_dm = F1,
+         financial_goal = F5,
+         salary = C1e1_1_C1e1,
+         pension = C1e1_2_C1e1,
+         social_assistance = C1e1_3_C1e1,
+         independent = C1e1_4_C1e1,
+         sufficient_income = F11,
+         sufficient_income2 = F13,
+         education_level = D9,
+         employment = D10,
+         stable_income = D6,
+         income = D8,
+         financial_knowledge_scaled = var1_scaled,
+         financial_behavior_scaled = var2_scaled,
+         financial_attitude_scaled = var3_scaled)
+
+df$id_ecf <- as.factor(df$id_ecf)
+df$gender <- as.factor(df$gender)
+df$province <- as.factor(df$province)
+df$age_range <- as.factor(df$age_range)
+df$live_alone <- as.factor(df$live_alone)
+df$married <- as.factor(df$married)
+df$children <- as.factor(df$children)
+df$older_son <- as.factor(df$older_son)
+df$parents <- as.factor(df$parents)
+df$family_other <- as.factor(df$family_other)
+df$friends <- as.factor(df$friends)
+df$other <- as.factor(df$other)
+df$financial_dm <- as.factor(df$financial_dm)
+df$financial_goal <- as.factor(df$financial_goal)
+df$salary <- as.factor(df$salary)
+df$pension <- as.factor(df$pension)
+df$social_assistance <- as.factor(df$social_assistance)
+df$independent <- as.factor(df$independent)
+df$sufficient_income <- as.factor(df$sufficient_income)
+df$sufficient_income2 <- as.factor(df$sufficient_income2)
+df$education_level <- as.factor(df$education_level)
+df$employment <- as.factor(df$employment)
+df$stable_income <- as.factor(df$stable_income)
+df$income <- as.factor(df$income)
+
+# Transform income
+df <- df %>%
+  mutate(income = case_when(income == "$5,830 o menos" ~ 1,
+                        income == "De $5,831 a $8,800" ~ 2,
+                        income == "De $8,801 a $10,600" ~ 3,
+                        income == "De $10,601 a $13,150" ~ 4,
+                        income == "De $13,151 a $15,700" ~ 5,
+                        income == "De $15,701 a $19,100" ~ 6,
+                        income == "De $19,101 a $23,900" ~ 7,
+                        income == "De $23,901 a $30,000" ~ 8,
+                        income == "De $30,001 a $41,200" ~ 9,
+                        income == "$41,201 a más" ~ 9,
+                        income == "No responde" ~ 0))
+
+# Transform employment
+df <- df %>%
+  mutate(employment = case_when(employment == "Ama (o) de casa" ~ "Housewife",
+                                employment == "Aprendiz" ~ "Intern",
+                                employment == "Buscando empleo" ~ "Unemployed",
+                                employment == "Empleo a tiempo completo (incluidos los independientes) (30 horas o más por semana)" 
+                                ~ "Full time employment",
+                                employment == "Empleo a tiempo parcial (incluyendo independientes) (menos de 30 horas por semana)" 
+                                ~ "Part time employment",
+                                employment == "Estudiante" ~ "Student",
+                                employment == "No está en busca de trabajo" ~ "Other",
+                                employment == "No puedo trabajar debido a enfermedad o mala salud" ~ "Other",
+                                employment == "No responde" ~ "Other",
+                                employment == "Otro" ~ "Other",
+                                employment == "Retirado/jubilado" ~ "Retired"))
+
+# Transform education
+df <- df %>%
+  mutate(education_level = case_when(education_level == "No asistí a la escuela" ~ 1,
+                        education_level == "Primaria incompleta" ~ 2,
+                        education_level == "Primaria completa" ~ 3,
+                        education_level == "Secundaria incompleta" ~ 4,
+                        education_level == "Secundaria completa" ~ 5,
+                        education_level == "Terciario incompleta" ~ 6,
+                        education_level == "Terciario completa" ~ 7,
+                        education_level == "Universitaria incompleta" ~ 8,
+                        education_level == "Universitaria completa" ~ 9,
+                        education_level == "Postgrado (Maestría / Doctorado)" ~ 10))
+
+# Transform financial decision making
+df <- df %>%
+  mutate(financial_dm = case_when(financial_dm == "Usted y su pareja" ~ "Yourself and your partner",
+                        financial_dm == "Usted y otro miembro de la familia (o familiares)" ~ "Yourself and another family member",
+                        financial_dm == "Usted" ~ "Yourself",
+                        financial_dm == "Su pareja" ~ "Your partner",
+                        financial_dm == "Otro miembro de la familia (o familiares)" ~ "Another family member",
+                        financial_dm == "Otra persona (no familiar)" ~ "Another person (not a family member)",
+                        financial_dm == "No responde" ~ "Other",
+                        financial_dm == "Nadie" ~ "Other"))
+
+# Gender 
+df <- df %>%
+  mutate(gender = case_when(gender == "Hombre" ~ "Male",
+                            gender == "Mujer" ~ "Female"))
+
+# Martial status 
+df <- df %>% 
+   mutate(marital_status = case_when(married == "Sí"&  children == "Sí" ~ "Married with children",
+                                     married == "Sí"&  children == "No" ~ "Married without children",
+                                     married == "No precisa" &  children == "Sí" ~ "Married without children"))
+
+df <- df %>%
+  mutate(income2 = case_when(income == 1 ~ "Low income",
+                             income == 2 ~ "Low income",
+                             income == 3 ~ "Low income",
+                             income == 4 ~ "Middle income",
+                             income == 5 ~ "Middle income",
+                             income == 6 ~ "Middle income",
+                             income == 7 ~ "High income",
+                             income == 8 ~ "High income",
+                             income == 9 ~ "High income"))
+        
+# Family members
+df <- df %>% 
+mutate(women_dm = ifelse(gender == "Female" & financial_dm == "Yourself", "Yes", "No"), 
+          women_dm2 = ifelse(gender == "Female" & financial_dm == "Yourself and your partner", "Yes", "No"),
+          women_children = ifelse(gender == "Female" & children == "Sí", "Yes", "No"),
+          women_married = ifelse(gender == "Female" & married == "Sí", "Yes", "No"),
+          women_single = ifelse(gender == "Female" & live_alone == "Sí", "Yes", "No"),
+       married = ifelse(married == "Sí", "Yes", "No"),
+       children = ifelse(children == "Sí", "Yes", "No"),
+       stable_income = ifelse(stable_income == "Sí", "Yes", "No"))
+
+df <- df %>% 
+   mutate(women_li = ifelse(gender == 1 & income2 == "Low income", "Yes", "No"), 
+          women_mi = ifelse(gender == 1 & income2 == "Middle income", "Yes", "No"),
+          women_hi = ifelse(gender == 1 & income2 == "High income", "Yes", "No"))
+
+df <- df %>% mutate(age_range2 = case_when(age_range == "18-19" | age_range == "20-29"  ~ "Young",
+                                           age_range == "30-39" | age_range == "40-49" | age_range == "50-59" ~ "Adult",
+                                           age_range == "60-69" | age_range == "70 a más" ~ "Old"))
+```
+
+
+## Descriptive analysis 
+```{r descriptive, echo=TRUE, message=FALSE, warning=FALSE}
+library(stargazer)
+library(e1071)
+# Assuming df is your data frame and it is already loaded
+numeric_vars <- df[, sapply(df, is.numeric)]
+
+# Compute skewness and kurtosis
+skewness_values <- apply(numeric_vars, 2, skewness)
+kurtosis_values <- apply(numeric_vars, 2, kurtosis)
+
+# Use stargazer to create a summary of basic statistics
+stargazer_summary <- stargazer(numeric_vars, type = "text", 
+                               title = "Descriptive Statistics",
+                               summary.stat = c("mean", "median", "sd", "min", "max", "n", "p25", "p75"))
+stargazer_summary
+
+custom_summary <- data.frame(
+  Variable = colnames(numeric_vars),
+  Mean = colMeans(numeric_vars),
+  Median = apply(numeric_vars, 2, median),
+  SD = apply(numeric_vars, 2, sd),
+  Min = apply(numeric_vars, 2, min),
+  Max = apply(numeric_vars, 2, max),
+  N = apply(numeric_vars, 2, function(x) sum(!is.na(x))),
+  Skewness = skewness_values,
+  Kurtosis = kurtosis_values
+)
+
+print(custom_summary)
+```
+
+## Region
+```{r descriptive3, echo=TRUE, message=FALSE, warning=FALSE}
+agg3 <- df %>%
+  group_by(REGION) %>%
+  summarise(financial_knowledge = mean(financial_knowledge_scaled),
+            financial_behavior = mean(financial_behavior_scaled),
+            financial_attitude = mean(financial_attitude_scaled))
+
+agg3_long <- gather(agg3, key = "Measure", value = "Value", financial_knowledge:financial_attitude)
+
+library(tidyr)
+ggplot(agg3_long, aes(x = REGION, y = Value, fill = Measure)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9), size = 0.1) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Average Measures by Region",
+    x = "",
+    y = "Average Value",
+    fill = "Region") +
+  theme_minimal(base_size = 15) +
+  facet_wrap(~ Measure, labeller = labeller(Measure = c("financial_knowledge" = "Financial Knowledge", 
+                                                          "financial_behavior" = "Financial Behavior",
+                                                          "financial_attitude" = "Spending Attitude"))) +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 10),
+        axis.text.x = element_text(size = 10, angle = 45),
+        axis.text.y = element_text(size = 10),
+        legend.position = "top",
+        legend.title = element_text(face = "bold"))
+```
+
+## Income
+```{r descriptive0, echo=TRUE, message=FALSE, warning=FALSE}
+df <- df %>% filter(income != 0)
+
+agg1 <- subset(df, select = c(income, financial_knowledge_scaled, financial_behavior_scaled,
+                              financial_attitude_scaled))
+
+agg1_long <- agg1 %>%
+  pivot_longer(cols = c(financial_knowledge_scaled, financial_behavior_scaled, financial_attitude_scaled),
+               names_to = "variable",
+               values_to = "value")
+
+agg1_long %>%
+ggplot(mapping = aes(x = income, y = value, color = variable)) +
+  geom_point(alpha = 0.6, position = position_jitter(width = 0.2, height = 0.5)) + 
+  geom_smooth(method = "lm", se = TRUE) + 
+  scale_color_brewer(palette = "Set2") +
+  scale_x_continuous(name = "Income", breaks = unique(agg1_long$income)) + 
+  scale_y_continuous(name = "Value") +
+  labs(title = "Scatter Plot of Financial Metrics by Income",
+       color = "Metric") + 
+  theme_minimal(base_size = 15) +
+  facet_wrap(~ variable, labeller = labeller(variable = c("financial_knowledge_scaled" = "Financial Knowledge", 
+                                                          "financial_behavior_scaled" = "Financial Behavior",
+                                                          "financial_attitude_scaled" = "Spending Attitude"))) +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 10),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        legend.position = "top",
+        legend.title = element_text(face = "bold"))
+
+cor(df$income, df$financial_knowledge_scaled)
+cor(df$income, df$financial_behavior_scaled)
+cor(df$income, df$financial_attitude_scaled)
+
+women <- df %>% filter(gender == "Female")
+cor(women$income, women$financial_knowledge_scaled)
+cor(women$income, women$financial_behavior_scaled)
+cor(women$income, women$financial_attitude_scaled)
+
+men <- df %>% filter(gender == "Male")
+cor(men$income, men$financial_knowledge_scaled)
+cor(men$income, men$financial_behavior_scaled)
+cor(men$income, men$financial_attitude_scaled)
+
+```
+
+## Gender
+```{r descriptive1, echo=TRUE, message=FALSE, warning=FALSE}
+# Correlation
+df <- df %>%
+  mutate(gender2 = case_when(gender == "Male" ~ 0,
+                             gender == "Female" ~ 1))
+
+young <- df %>% filter(age_range == "18-19" | age_range == "20-29")
+adult <- df %>% filter(age_range == "30-39" | age_range == "40-49" | age_range == "50-59")
+old <- df %>% filter(age_range == "60-69" | age_range == "70 a más")
+
+young_correlations <- data.frame(
+  Metric = c("Financial Knowledge", "Financial Behavior", "Spending Attitude"),
+  Young = c(
+    cor(young$gender2, young$financial_knowledge_scaled),
+    cor(young$gender2, young$financial_behavior_scaled),
+    cor(young$gender2, young$financial_attitude_scaled)
+  )
+)
+
+adult_correlations <- data.frame(
+  Metric = c("Financial Knowledge", "Financial Behavior", "Spending Attitude"),
+  Adult = c(
+    cor(adult$gender2, adult$financial_knowledge_scaled),
+    cor(adult$gender2, adult$financial_behavior_scaled),
+    cor(adult$gender2, adult$financial_attitude_scaled)
+  )
+)
+
+old_correlations <- data.frame(
+  Metric = c("Financial Knowledge", "Financial Behavior", "Spending Attitude"),
+  Old = c(
+    cor(old$gender2, old$financial_knowledge_scaled),
+    cor(old$gender2, old$financial_behavior_scaled),
+    cor(old$gender2, old$financial_attitude_scaled)
+  )
+)
+
+# Combine all correlations into one data frame
+correlations <- young_correlations %>%
+  left_join(adult_correlations, by = "Metric") %>%
+  left_join(old_correlations, by = "Metric")
+
+# Print the table using kable
+stargazer(correlations, type = "text", summary = FALSE, title = "Correlation between gender and financial metrics by age", 
+          rownames = FALSE)
+
+# Graph
+library(tidyr)
+
+agg2 <- df %>%
+  group_by(gender, age_range2, income2) %>%
+  summarise(financial_knowledge = mean(financial_knowledge_scaled),
+            financial_behavior = mean(financial_behavior_scaled),
+            financial_attitude = mean(financial_attitude_scaled))
+
+agg2_long <- gather(agg2, key = "Measure", value = "Value", financial_knowledge:financial_attitude)
+agg2_long$income2 <- factor(agg2_long$income2, levels = c("High income", "Middle income", "Low income"))
+agg2_long$age_range2 <- factor(agg2_long$age_range2, levels = c("Old", "Adult", "Young"))
+
+
+# Women
+agg2_long %>%
+  filter(gender == "Female")  %>%
+ggplot(aes(x = Measure, y = Value, fill = gender)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9), size = 0.1) +
+  geom_text(aes(label = round(Value, 3)), position = position_dodge(width = 0.9), vjust = -0.2, size = 3) +
+  scale_fill_brewer(palette = "Set2") +
+  facet_wrap(income2 ~ age_range2) +
+  labs(
+    title = "Average Measures by Gender and Age Range",
+    x = "",
+    y = "Average Value",
+    fill = "Gender"
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 10),
+    axis.text.x = element_text(size = 10, angle = 45),
+    axis.text.y = element_text(size = 10),
+    legend.position = "top",
+    legend.title = element_text(face = "bold")
+  ) +
+  scale_x_discrete(labels = c(
+    "financial_knowledge" = "Financial Knowledge",
+    "financial_behavior" = "Financial Behavior",
+    "financial_attitude" = "Spending Attitude"
+  ))
+```
+
+
+## Education level
+```{r descriptive4, echo=TRUE, message=FALSE, warning=FALSE}
+agg4 <- subset(df, select = c(education_level, gender, financial_knowledge_scaled, financial_behavior_scaled,
+                              financial_attitude_scaled))
+
+agg4_long <- agg4 %>%
+  pivot_longer(cols = c(financial_knowledge_scaled, financial_behavior_scaled, financial_attitude_scaled),
+               names_to = "variable",
+               values_to = "value")
+
+agg4_long %>%
+ggplot(mapping = aes(x = education_level, y = value, color = variable)) +
+  geom_point(alpha = 0.6, position = position_jitter(width = 0.2, height = 0.5)) + 
+  geom_smooth(method = "lm", se = TRUE) + 
+  scale_color_brewer(palette = "Set2") +
+  scale_x_continuous(name = "Education level", breaks = unique(agg4_long$education_level)) + 
+  scale_y_continuous(name = "Value") +
+  labs(title = "Scatter Plot of Financial Metrics by Education Level",
+       color = "Metric") + 
+  theme_minimal(base_size = 15) +
+  facet_wrap(gender ~ variable, labeller = labeller(variable = c("financial_knowledge_scaled" = "Financial Knowledge", 
+                                                          "financial_behavior_scaled" = "Financial Behavior",
+                                                          "financial_attitude_scaled" = "Spending Attitude"))) +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 10),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        legend.position = "top",
+        legend.title = element_text(face = "bold"))
+
+# Correlations
+
+general_correlations <- data.frame(
+  Metric = c("Financial Knowledge", "Financial Behavior", "Spending Attitude"),
+  General = c(
+    cor(df$education_level, df$financial_knowledge_scaled),
+    cor(df$education_level, df$financial_behavior_scaled),
+    cor(df$education_level, df$financial_attitude_scaled)
+  )
+)
+
+women_correlations <- data.frame(
+  Metric = c("Financial Knowledge", "Financial Behavior", "Spending Attitude"),
+  Women = c(
+    cor(women$education_level, women$financial_knowledge_scaled),
+    cor(women$education_level, women$financial_behavior_scaled),
+    cor(women$education_level, women$financial_attitude_scaled)
+  )
+)
+
+men_correlations <- data.frame(
+  Metric = c("Financial Knowledge", "Financial Behavior", "Spending Attitude"),
+  Men = c(
+    cor(men$education_level, men$financial_knowledge_scaled),
+    cor(men$education_level, men$financial_behavior_scaled),
+    cor(men$education_level, men$financial_attitude_scaled)
+  )
+)
+
+# Combine all correlations into one data frame
+correlations2 <- general_correlations %>%
+  left_join(women_correlations, by = "Metric") %>%
+  left_join(men_correlations, by = "Metric")
+
+# Print the table using kable
+stargazer(correlations2, type = "text", summary = FALSE, title = "Correlation between education level and financial metrics", 
+          rownames = FALSE)
+
+
+```
+## Multiple regression 
+
+```{r lm, echo=TRUE, message=FALSE, warning=FALSE}
+df$gender <- as.factor(df$gender)
+df$gender <- relevel(df$gender, ref="Male")
+
+mod1 <- lm(financial_knowledge_scaled ~ gender + age_range2 + education_level + I(education_level^2) + 
+           women_dm + women_dm2 + married + children + income2 + gender*income2 + gender*age_range2,
+           data = df)
+
+summary(mod1)
+
+mod2 <- lm(financial_behavior_scaled ~ gender + age_range2 + education_level + I(education_level^2) + 
+           women_dm + women_dm2 + married + children + income2 + gender*income2 + gender*age_range2,
+           data = df)
+
+summary(mod2)
+
+mod3 <- lm(financial_attitude_scaled ~ gender + age_range2 + education_level + I(education_level^2) + 
+           women_dm + women_dm2 + married + children + income2 + gender*income2 + gender*age_range2,
+           data = df)
+
+summary(mod3)
+
+# Output the models' summaries using stargazer
+stargazer(mod1, mod2, mod3,  
+          dep.var.labels = c("Financial Knowledge", "Financial Behavior", "Spending Attitude"),
+          out = "finance.txt")
+```
+
+## Robustness checks
+
+```{r robustness checks, echo=TRUE, message=FALSE, warning=FALSE}
+library(olsrr)
+
+## Check outliers
+ols_plot_cooksd_chart(mod1)
+ols_plot_resid_lev(mod1)
+
+## Check heteroskedasticity
+ols_plot_resid_fit(mod1)
+ols_test_breusch_pagan(mod1)
+
+## Check multicollinearity
+ols_vif_tol(mod1)
+
+## Check outliers
+ols_plot_cooksd_chart(mod2)
+ols_plot_resid_lev(mod2)
+
+## Check heteroskedasticity
+ols_plot_resid_fit(mod2)
+ols_test_breusch_pagan(mod2)
+
+## Check multicollinearity
+ols_vif_tol(mod2)
+
+## Check outliers
+ols_plot_cooksd_chart(mod3)
+ols_plot_resid_lev(mod3)
+
+## Check heteroskedasticity
+ols_plot_resid_fit(mod3)
+ols_test_breusch_pagan(mod3)
+
+## Check multicollinearity
+ols_vif_tol(mod3)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
